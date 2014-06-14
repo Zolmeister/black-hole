@@ -137,4 +137,25 @@ describe('blackhole', function () {
       expect(hist.promised.average).to.be.below(200)
     })
   })
+
+  it('wraps function outputs', function () {
+    var obj = {
+      fn: function () {
+        return {
+          nested: {
+            nestedFn: function () {
+              return Promise.resolve(10).delay(100)
+            }
+          }
+        }
+      }
+    }
+
+    var hole = blackhole(obj)
+    var hist = hole._blackHole
+
+    return obj.fn().nested.nestedFn().then(function () {
+      console.log(hist);
+    })
+  })
 })

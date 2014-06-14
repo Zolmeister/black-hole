@@ -1,7 +1,8 @@
 /*globals Proxy*/
 'use strict'
 
-module.exports = function blackhole(obj, history) {
+module.exports = blackhole
+function blackhole(obj, history) {
   history = history || {}
   function handlerMaker(obj) {
     return {
@@ -52,59 +53,7 @@ module.exports = function blackhole(obj, history) {
          return history
        }
 
-       var start = Date.now()
-       var log = history[name] || {
-         average: 0,
-         calls: 0
-       }
-
-       function nextAvg(numCalls, average, val) {
-         return (numCalls * average + val) / (numCalls + 1)
-       }
-
-       history[name] = log
-
-       if (typeof obj[name] === 'function') {
-         return function () {
-
-          var args = Array.prototype.slice.call(arguments)
-          var lastArg = args[args.length - 1]
-
-          // function is node style w/callback
-          if (typeof lastArg === 'function' && lastArg.length === 2) {
-            args[args.length - 1] = function () {
-              log.average = nextAvg(log.calls, log.average, Date.now() - start)
-              log.calls++
-              return lastArg.apply(this, arguments)
-            }
-            return obj[name].apply(this, args)
-          }
-
-          // regular function call
-          var result = obj[name].apply(this, args)
-
-          // result is a promise
-          if (typeof result === 'object' && typeof result.then === 'function') {
-           result.then(function (res) {
-             log.average = nextAvg(log.calls, log.average, Date.now() - start)
-            log.calls++
-             return res
-           })
-           return result
-          }
-
-          log.average = nextAvg(log.calls, log.average, Date.now() - start)
-          log.calls++
-          return result
-         }
-       }
-
-       if (typeof obj[name] === 'object') {
-         log.next = {}
-         return blackhole(obj[name], log.next)
-       }
-
-       return obj[name]
+       return wrap(obj[name], name, history)
      },
      set: function(receiver, name, val) {
        obj[name] = val
@@ -124,4 +73,80 @@ module.exports = function blackhole(obj, history) {
   }
 
   return Proxy.create(handlerMaker(obj))
+}
+
+// wrap objects
+function wrap(obj, name, history) {
+
+  // timers
+  var start = Date.now()
+  var log = history[name] = history[name] || {
+   average: 0,
+   calls: 0
+  }
+
+  if (typeof obj === 'object') {
+   log.next = {}
+   return blackhole(obj, log.next)
+
+  // only handle functions after this
+  } else if (typeof obj !== 'function') {
+   return obj
+  }
+
+  // rename for clarity
+  var fn = obj
+
+  return function () {
+    var args = Array.prototype.slice.call(arguments)
+    var lastArg = args[args.length - 1]
+
+    // function is node style w/callback, override callback fn
+    if (typeof lastArg === 'function' && lastArg.length === 2) {
+      args[args.length - 1] = function () {
+        updateLog(log, start)
+
+        return wrapResult(lastArg.apply(this, arguments), log)
+      }
+      return fn.apply(this, args)
+    }
+
+    // regular function call
+    var result = fn.apply(this, args)
+
+    // result is a promise
+    if (typeof result === 'object' && typeof result.then === 'function') {
+     result.then(function (res) {
+       log.average = nextAvg(log.calls, log.average, Date.now() - start)
+       log.calls++
+
+       return wrapResult(res, log)
+     })
+     return result
+    }
+
+    log.average = nextAvg(log.calls, log.average, Date.now() - start)
+    log.calls++
+
+    return wrapResult(result, log)
+  }
+}
+
+function wrapResult(result, log) {
+  if (typeof result === 'object') {
+    log.next = log.next || {}
+    return blackhole(result, log.next)
+  }
+
+  return result
+}
+
+function updateLog(log, start) {
+  log.average = nextAvg(log.calls, log.average, Date.now() - start)
+  log.calls++
+}
+
+// continuous average
+function nextAvg(numCalls, average, val) {
+  return (numCalls * average + val) / (numCalls + 1)
 }
