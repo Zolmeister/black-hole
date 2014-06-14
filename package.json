@@ -1,7 +1,17 @@
 {
   "name": "black-hole",
-  "version": "0.0.1",
-  "description": "",
+  "version": "0.1.0",
+  "description": "Measure function performance times on objects",
+  "keywords": [
+    "benchmark",
+    "speed",
+    "node",
+    "proxy",
+    "measure",
+    "performance"
+  ],
+  "author": "Zolmeister",
+  "license": "MIT",
   "main": "index.js",
   "scripts": {
     "test": "node_modules/mocha/bin/mocha --harmony test"

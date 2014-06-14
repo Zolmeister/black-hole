@@ -179,11 +179,11 @@ describe('blackhole', function () {
       // fn 0ms
       // fn.nested.nestedFn 103ms
       var pretty = blackhole.pretty(hole)
-      expect(pretty[0][0]).to.equal('fn')
-      expect(pretty[0][1]).to.be.below(10)
-      expect(pretty[1][0]).to.equal('fn.nested.nestedFn')
-      expect(pretty[1][1]).to.be.above(40)
-      expect(pretty[1][1]).to.be.below(200)
+      expect(pretty[0].name).to.equal('fn')
+      expect(pretty[0].ms).to.be.below(10)
+      expect(pretty[1].name).to.equal('fn.nested.nestedFn')
+      expect(pretty[1].ms).to.be.above(40)
+      expect(pretty[1].ms).to.be.below(200)
     })
   })
 })

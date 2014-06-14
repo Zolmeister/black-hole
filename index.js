@@ -85,7 +85,10 @@ blackhole.pretty = function (obj) {
   var log = []
   function append(obj, key) {
     if (obj.calls) {
-      log.push([key, obj.average])
+      log.push({
+        name: key,
+        ms: obj.average
+      })
     }
     if (obj.next) {
       for (var name in obj.next) {
