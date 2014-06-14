@@ -154,8 +154,9 @@ describe('blackhole', function () {
     var hole = blackhole(obj)
     var hist = hole._blackHole
 
-    return obj.fn().nested.nestedFn().then(function () {
-      console.log(hist);
+    return hole.fn().nested.nestedFn().then(function () {
+      expect(hist.fn.next.nested.next.nestedFn.average).to.be.above(40)
+      expect(hist.fn.next.nested.next.nestedFn.average).to.be.below(200)
     })
   })
 })

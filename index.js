@@ -117,16 +117,14 @@ function wrap(obj, name, history) {
     // result is a promise
     if (typeof result === 'object' && typeof result.then === 'function') {
      result.then(function (res) {
-       log.average = nextAvg(log.calls, log.average, Date.now() - start)
-       log.calls++
+       updateLog(log, start)
 
        return wrapResult(res, log)
      })
      return result
     }
 
-    log.average = nextAvg(log.calls, log.average, Date.now() - start)
-    log.calls++
+    updateLog(log, start)
 
     return wrapResult(result, log)
   }
