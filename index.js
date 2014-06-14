@@ -2,7 +2,7 @@
 'use strict'
 
 module.exports = function blackhole(obj, history) {
-  history = history || []
+  history = history || {}
   function handlerMaker(obj) {
     return {
      getOwnPropertyDescriptor: function(name) {
@@ -48,19 +48,59 @@ module.exports = function blackhole(obj, history) {
        return ({}).hasOwnProperty.call(obj, name)
      },
      get: function(receiver, name) {
-       if (name === '_blackHoleHistory') {
+       if (name === '_blackHole') {
          return history
        }
 
-       var log = {
-         timestamp: Date.now(),
-         name: name
+       var start = Date.now()
+       var log = history[name] || {
+         average: 0,
+         calls: 0
        }
 
-       history.push(log)
+       function nextAvg(numCalls, average, val) {
+         return (numCalls * average + val) / (numCalls + 1)
+       }
+
+       history[name] = log
+
+       if (typeof obj[name] === 'function') {
+         return function () {
+
+          var args = Array.prototype.slice.call(arguments)
+          var lastArg = args[args.length - 1]
+
+          // function is node style w/callback
+          if (typeof lastArg === 'function' && lastArg.length === 2) {
+            args[args.length - 1] = function () {
+              log.average = nextAvg(log.calls, log.average, Date.now() - start)
+              log.calls++
+              return lastArg.apply(this, arguments)
+            }
+            return obj[name].apply(this, args)
+          }
+
+          // regular function call
+          var result = obj[name].apply(this, args)
+
+          // result is a promise
+          if (typeof result === 'object' && typeof result.then === 'function') {
+           result.then(function (res) {
+             log.average = nextAvg(log.calls, log.average, Date.now() - start)
+            log.calls++
+             return res
+           })
+           return result
+          }
+
+          log.average = nextAvg(log.calls, log.average, Date.now() - start)
+          log.calls++
+          return result
+         }
+       }
 
        if (typeof obj[name] === 'object') {
-         log.next = []
+         log.next = {}
          return blackhole(obj[name], log.next)
        }
 

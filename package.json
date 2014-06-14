@@ -1,12 +1,13 @@
 {
   "name": "black-hole",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "node_modules/mocha/bin/mocha --harmony test"
   },
   "devDependencies": {
+    "bluebird": "2.1.1",
     "chai": "1.9.1",
     "mocha": "1.20.1"
   }
