@@ -75,6 +75,32 @@ function blackhole(obj, history) {
   return Proxy.create(handlerMaker(obj))
 }
 
+blackhole.pretty = function (obj) {
+  if (!obj || typeof obj._blackHole !== 'object') {
+    throw new Error('Not a black-hole object')
+  }
+
+  var history = obj._blackHole
+
+  var log = []
+  function append(obj, key) {
+    if (obj.calls) {
+      log.push([key, obj.average])
+    }
+    if (obj.next) {
+      for (var name in obj.next) {
+        append(obj.next[name], key + '.' + name)
+      }
+    }
+  }
+
+  for (var key in history) {
+    append(history[key], key)
+  }
+
+  return log
+}
+
 // wrap objects
 function wrap(obj, name, history) {
 

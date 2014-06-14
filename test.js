@@ -159,4 +159,31 @@ describe('blackhole', function () {
       expect(hist.fn.next.nested.next.nestedFn.average).to.be.below(200)
     })
   })
+
+  it('pretty prints', function () {
+    var obj = {
+      fn: function () {
+        return {
+          nested: {
+            nestedFn: function () {
+              return Promise.resolve(10).delay(100)
+            }
+          }
+        }
+      }
+    }
+
+    var hole = blackhole(obj)
+
+    return hole.fn().nested.nestedFn().then(function () {
+      // fn 0ms
+      // fn.nested.nestedFn 103ms
+      var pretty = blackhole.pretty(hole)
+      expect(pretty[0][0]).to.equal('fn')
+      expect(pretty[0][1]).to.be.below(10)
+      expect(pretty[1][0]).to.equal('fn.nested.nestedFn')
+      expect(pretty[1][1]).to.be.above(40)
+      expect(pretty[1][1]).to.be.below(200)
+    })
+  })
 })
